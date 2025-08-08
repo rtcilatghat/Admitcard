@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>RTCI CCC Test 2025 - Admit Card Search</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        text-align: center;
+        padding: 50px;
+    }
+    h1 {
+        color: #333;
+    }
+    input {
+        padding: 10px;
+        font-size: 16px;
+        width: 250px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #0056b3;
+    }
+    .result {
+        margin-top: 20px;
+        font-size: 18px;
+    }
+    a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+
+<h1>RTCI CCC Test 2025 - Admit Card Search</h1>
+<p>Enter your Roll Number to download Admit Card</p>
+<input type="text" id="rollInput" placeholder="Enter Roll Number">
+<button onclick="searchAdmitCard()">Search</button>
+
+<div class="result" id="result"></div>
+
+<script>
+// यहां अपना Google Sheet का "Publish to Web" CSV Link डालें
+const sheetURL = https://docs.google.com/spreadsheets/d/1Gb5R718e-3YtPIjva6mqINQNUQCUzgp9ogA4xbja_zU/edit?usp=sharing
+
+function searchAdmitCard() {
+    const rollNo = document.getElementById("rollInput").value.trim();
+    if (!rollNo) {
+        alert("Please enter Roll Number");
+        return;
+    }
+
+    fetch(sheetURL)
+        .then(res => res.text())
+        .then(data => {
+            const rows = data.split("\n").map(row => row.split(","));
+            let found = false;
+
+            for (let i = 1; i < rows.length; i++) {
+                const rowRoll = rows[i][0].trim(); // मान लिया कि Roll No पहली कॉलम में है
+                const pdfLink = rows[i][1].trim(); // मान लिया कि PDF Link दूसरी कॉलम में है
+
+                if (rowRoll === rollNo) {
+                    found = true;
+                    document.getElementById("result").innerHTML = `
+                        ✅ Admit Card Found!<br><br>
+                        <a href="${pdfLink}" target="_blank">📄 Download Admit Card</a>
+                    `;
+                    break;
+                }
+            }
+
+            if (!found) {
+                document.getElementById("result").innerHTML = "❌ Roll Number Not Found";
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error fetching data from Google Sheet");
+        });
+}
+</script>
+
+</body>
+</html>
