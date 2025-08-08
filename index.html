@@ -1,65 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Admit Card</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>Admit Card Search</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    input, button { padding: 8px; margin: 5px; }
+    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    #result { display: none; }
+  </style>
 </head>
 <body>
-  <h2>Admit Card Download</h2>
-  <input type="text" id="rollInput" placeholder="Roll No दर्ज करें">
-  <button onclick="getData()">Search</button>
 
-  <div id="result"></div>
-  <button id="downloadBtn" style="display:none;" onclick="downloadPDF()">Download PDF</button>
+<h2>Admit Card Search</h2>
+<input type="text" id="rollNo" placeholder="Enter Roll No">
+<button onclick="searchData()">Search</button>
 
-  <script>
-    const sheetURL = https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pubhtml
+<div id="result">
+  <h3>Admit Card Details</h3>
+  <table id="dataTable"></table>
+  <br>
+  <button onclick="downloadPDF()">Download PDF</button>
+</div>
 
-    async function getData() {
-      const rollNo = document.getElementById("rollInput").value.trim();
-      const response = await fetch(sheetURL);
-      const data = await response.text();
-      const rows = data.split("\n").map(row => row.split(","));
-      
-      const header = rows[0];
-      const rollIndex = header.findIndex(h => h.trim().toLowerCase() === "roll no".toLowerCase());
-      
-      let found = false;
-      for (let i = 1; i < rows.length; i++) {
-        if (rows[i][rollIndex] && rows[i][rollIndex].trim() === rollNo) {
-          found = true;
-          currentData = {};
-          header.forEach((h, idx) => currentData[h.trim()] = rows[i][idx]?.trim() || "");
-          document.getElementById("result").innerHTML =
-            `<p><b>Name:</b> ${currentData["Name"]}</p>
-             <p><b>Father Name:</b> ${currentData["Father Name"]}</p>
-             <p><b>Course:</b> ${currentData["Course"]}</p>
-             <p><b>Roll No:</b> ${currentData["Roll No"]}</p>
-             <p><b>Exam Date:</b> ${currentData["Exam Date"]}</p>
-             <p><b>Exam Time:</b> ${currentData["Exam Time"]}</p>`;
-          document.getElementById("downloadBtn").style.display = "block";
-          break;
-        }
-      }
-      if (!found) {
-        document.getElementById("result").innerHTML = "<p style='color:red;'>Roll No Not Found</p>";
-        document.getElementById("downloadBtn").style.display = "none";
-      }
-    }
+<script>
+const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv';
 
-    function downloadPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      doc.setFontSize(16);
-      doc.text("Admit Card", 80, 20);
-      doc.setFontSize(12);
-      let y = 40;
-      for (const key in currentData) {
-        doc.text(`${key}: ${currentData[key]}`, 20, y);
-        y += 10;
-      }
-      doc.save(`${currentData["Roll No"]}_AdmitCard.pdf`);
-    }
-  </script>
+let sheetData = [];
+
+fetch(sheetUrl)
+  .then(res => res.text())
+  .then(text => {
+    sheetData = text.split('\n').map(row => row.split(','));
+  });
+
+function searchData() {
+  const rollNo = document.getElementById('rollNo').value.trim();
+  const resultDiv = document.getElementById('result');
+  const table = document.getElementById('dataTable');
+  table.innerHTML = '';
+
+  const headers = sheetData[0];
+  const row = sheetData.find(r => r[0].trim() === rollNo);
+
+  if (row) {
+    let headerRow = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+    let dataRow = '<tr>' + row.map(d => `<td>${d}</td>`).join('') + '</tr>';
+    table.innerHTML = headerRow + dataRow;
+    resultDiv.style.display = 'block';
+  } else {
+    alert('Roll No not found');
+    resultDiv.style.display = 'none';
+  }
+}
+
+function downloadPDF() {
+  const rollNo = document.getElementById('rollNo').value.trim();
+  const pdfUrl = `admitcards/${rollNo}.pdf`; // अपने PDF फ़ोल्डर का path
+  window.open(pdfUrl, '_blank');
+}
+</script>
+
 </body>
 </html>
