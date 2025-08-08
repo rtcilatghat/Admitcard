@@ -1,98 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-<meta charset="UTF-8">
-<title>RTCI CCC Test 2025 - Admit Card Search</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RTCI CCC Test 2025 — Admit Card Search</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f7f7f7;
-        text-align: center;
-        padding: 50px;
-    }
-    h1 {
-        color: #333;
-    }
-    input {
-        padding: 10px;
-        font-size: 16px;
-        width: 250px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-    }
-    button {
-        padding: 10px 20px;
-        font-size: 16px;
-        background: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-    button:hover {
-        background: #0056b3;
-    }
-    .result {
-        margin-top: 20px;
-        font-size: 18px;
-    }
-    a {
-        color: #007bff;
-        text-decoration: none;
-        font-weight: bold;
-    }
+  body{font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#222;margin:0;padding:0}
+  .container{max-width:820px;margin:50px auto;padding:22px;background:#fff;border-radius:10px;box-shadow:0 6px 22px rgba(20,30,50,0.06)}
+  h1{margin:0 0 8px;font-size:22px;color:#1a3a66}
+  p.lead{margin:0 0 12px;color:#333}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  input[type=text]{flex:1;padding:12px;border:1px solid #d0d7e0;border-radius:6px;font-size:16px}
+  button{padding:11px 16px;background:#1f78d1;color:#fff;border:none;border-radius:6px;font-size:15px;cursor:pointer}
+  .result{margin-top:18px;padding:14px;border-radius:8px;background:#fbfcff;border:1px solid #eef3fb}
+  .notfound{color:#b02a37;font-weight:600}
+  .found-title{font-weight:700;margin-bottom:6px}
+  table {border-collapse:collapse;margin-top:8px}
+  td, th {padding:8px 12px;border:1px solid #e6edf5}
+  a.download{display:inline-block;margin-top:10px;padding:10px 14px;background:#2b9153;color:#fff;border-radius:6px;text-decoration:none}
+  small{color:#666}
 </style>
 </head>
 <body>
+  <div class="container">
+    <h1>RTCI CCC Test 2025 — Admit Card Search</h1>
+    <p class="lead">आपका Roll No डालें और Search दबाएँ — Sheet से PDF लिंक मिले तो नया टैब में खुलेगा।</p>
 
-<h1>RTCI CCC Test 2025 - Admit Card Search</h1>
-<p>Enter your Roll Number to download Admit Card</p>
-<input type="text" id="rollInput" placeholder="Enter Roll Number">
-<button onclick="searchAdmitCard()">Search</button>
+    <div class="row">
+      <input id="rollInput" type="text" placeholder="Enter Roll No (e.g., LT2174)" />
+      <button id="btnSearch">Get Admit Card</button>
+    </div>
 
-<div class="result" id="result"></div>
+    <div id="status" class="result" style="display:none"></div>
+    <small>Note: Sheet को "Publish to web" और "Anyone with link - Viewer" होना चाहिए।</small>
+  </div>
 
 <script>
-// यहां अपना Google Sheet का "Publish to Web" CSV Link डालें
-const sheetURL = https://docs.google.com/spreadsheets/d/1Gb5R718e-3YtPIjva6mqINQNUQCUzgp9ogA4xbja_zU/edit?usp=sharing
+const sheetCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv";
 
-function searchAdmitCard() {
-    const rollNo = document.getElementById("rollInput").value.trim();
-    if (!rollNo) {
-        alert("Please enter Roll Number");
-        return;
+function parseCSV(text) {
+  const rows = [];
+  let cur = "", row = [], inQuotes = false;
+  for (let i=0;i<text.length;i++){
+    const ch = text[i], next = text[i+1];
+    if (ch === '"') {
+      if (inQuotes && next === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      row.push(cur); cur = "";
+    } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && next === '\n') { i++; }
+      row.push(cur); rows.push(row); row=[]; cur="";
+    } else {
+      cur += ch;
     }
-
-    fetch(sheetURL)
-        .then(res => res.text())
-        .then(data => {
-            const rows = data.split("\n").map(row => row.split(","));
-            let found = false;
-
-            for (let i = 1; i < rows.length; i++) {
-                const rowRoll = rows[i][0].trim(); // मान लिया कि Roll No पहली कॉलम में है
-                const pdfLink = rows[i][1].trim(); // मान लिया कि PDF Link दूसरी कॉलम में है
-
-                if (rowRoll === rollNo) {
-                    found = true;
-                    document.getElementById("result").innerHTML = `
-                        ✅ Admit Card Found!<br><br>
-                        <a href="${pdfLink}" target="_blank">📄 Download Admit Card</a>
-                    `;
-                    break;
-                }
-            }
-
-            if (!found) {
-                document.getElementById("result").innerHTML = "❌ Roll Number Not Found";
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Error fetching data from Google Sheet");
-        });
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows;
 }
-</script>
 
+async function loadSheetOnce() {
+  if (window._sheetCache) return window._sheetCache;
+  const status = document.getElementById("status");
+  status.style.display = "block";
+  status.innerHTML = "Loading sheet data... please wait...";
+  try {
+    const res = await fetch(sheetCSV);
+    if (!res.ok) throw new Error("Cannot fetch sheet. Check Publish settings.");
+    const txt = await res.text();
+    const rows = parseCSV(txt);
+    if (!rows || rows.length < 2) throw new Error("Sheet empty or not in expected format.");
+    const headers = rows[0].map(h=>h.trim());
+    const indices = {
+      roll: headers.findIndex(h => /roll\s*no|rollnumber|roll/i.test(h)) ,
+      pdf : headers.findIndex(h => /link.*(doc|pdf|merged)|pdf|link/i.test(h)) ,
+      name: headers.findIndex(h => /name/i.test(h)),
+      father: headers.findIndex(h => /father/i.test(h)),
+      course: headers.findIndex(h => /course/i.test(h)),
+      date: headers.findIndex(h => /exam\s*date|date/i.test(h)),
+      time: headers.findIndex(h => /exam\s*time|time/i.test(h))
+    };
+    // fallback: if roll not found, assume first column
+    if (indices.roll === -1) indices.roll = 0;
+    window._sheetCache = { headers, rows, indices };
+    status.style.display = "none";
+    return window._sheetCache;
+  } catch (err) {
+    status.innerHTML = "<div class='notfound'>Error loading sheet: "+err.message+"</div>";
+    throw err;
+  }
+}
+
+function esc(s){ if(!s) return ""; return s.replace(/[&<>"'`=\/]/g,ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#47;','`':'&#96;','=':'&#61;'}[ch])); }
+
+async function searchAndShow() {
+  const roll = document.getElementById("rollInput").value.trim();
+  const status = document.getElementById("status");
+  if (!roll) { alert("कृपया Roll No डालें"); return; }
+  try {
+    const data = await loadSheetOnce();
+    const {rows, indices} = data;
+    let found = null;
+    for (let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if (!r[indices.roll]) continue;
+      if (r[indices.roll].toString().trim().toLowerCase() === roll.toLowerCase()) {
+        found = {
+          roll: r[indices.roll] || "",
+          name: indices.name !== -1 ? r[indices.name] : "",
+          father: indices.father !== -1 ? r[indices.father] : "",
+          course: indices.course !== -1 ? r[indices.course] : "",
+          date: indices.date !== -1 ? r[indices.date] : "",
+          time: indices.time !== -1 ? r[indices.time] : "",
+          link: indices.pdf !== -1 ? r[indices.pdf] : ""
+        };
+        break;
+      }
+    }
+    if (found) {
+      const link = found.link ? found.link.trim() : "";
+      const downloadLink = link ? `<a class="download" href="${esc(link)}" target="_blank" rel="noopener">Open / Download Admit Card (PDF)</a>` : "<div class='notfound'>PDF Link missing in sheet.</div>";
+      status.style.display = "block";
+      status.innerHTML = `<div class="found-title">✅ Admit Card Found</div>
+        <table>
+          <tr><th>Name</th><td>${esc(found.name)}</td></tr>
+          <tr><th>Father</th><td>${esc(found.father)}</td></tr>
+          <tr><th>Course</th><td>${esc(found.course)}</td></tr>
+          <tr><th>Roll No</th><td>${esc(found.roll)}</td></tr>
+          <tr><th>Exam Date</th><td>${esc(found.date)}</td></tr>
+          <tr><th>Exam Time</th><td>${esc(found.time)}</td></tr>
+        </table>${downloadLink}`;
+    } else {
+      status.style.display = "block";
+      status.innerHTML = `<div class="notfound">❌ Admit Card not found for Roll No: <strong>${esc(roll)}</strong></div>`;
+    }
+  } catch (err) {
+    // loadSheetOnce shows error
+  }
+}
+
+document.getElementById("btnSearch").addEventListener("click", searchAndShow);
+document.getElementById("rollInput").addEventListener("keydown", function(e){ if (e.key === "Enter") searchAndShow(); });
+</script>
 </body>
 </html>
