@@ -1,50 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Admit Card Search</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 30px; }
-    input, button { padding: 8px; margin: 5px; }
-    table { border-collapse: collapse; margin-top: 20px; width: 100%; display: none; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    #downloadBtn { display: none; padding: 10px 16px; background: green; color: white; border: none; cursor: pointer; }
-  </style>
-</head>
-<body>
-<h2>Admit Card Search</h2>
-<input type="text" id="rollNo" placeholder="Enter Roll No">
-<button onclick="searchData()">Search</button>
-
-<table id="resultTable">
-  <thead>
-    <tr id="headerRow"></tr>
-  </thead>
-  <tbody id="dataRow"></tbody>
-</table>
-<button id="downloadBtn" onclick="downloadPDF()">Download PDF</button>
-
 <script>
 const csvURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv';
 let sheetData = [];
 
-// लोड करें
+// CSV लोड
 fetch(csvURL)
   .then(res => res.text())
   .then(text => {
     sheetData = text.trim().split('\n').map(r => r.split(','));
-    console.log("Sheet data loaded.");
+    console.log("Sheet data loaded:", sheetData);
   });
 
 function searchData() {
-  const roll = document.getElementById("rollNo").value.trim();
+  const roll = document.getElementById("rollNo").value.trim().toLowerCase();
   if (!roll) {
     alert("Please enter Roll No");
     return;
   }
 
-  const headers = sheetData[0];
-  const row = sheetData.slice(1).find(r => r[headers.indexOf("Roll No")]?.trim() === roll);
+  const headers = sheetData[0].map(h => h.trim().toLowerCase());
+  const rollIndex = headers.findIndex(h => h.includes("roll"));
+  if (rollIndex === -1) {
+    alert("Roll No column not found in sheet!");
+    return;
+  }
+
+  const row = sheetData.slice(1).find(r => r[rollIndex]?.trim().toLowerCase() === roll);
 
   const table = document.getElementById("resultTable");
   document.getElementById("headerRow").innerHTML = '';
@@ -52,7 +32,7 @@ function searchData() {
   document.getElementById("downloadBtn").style.display = 'none';
 
   if (row) {
-    headers.forEach(h => {
+    sheetData[0].forEach(h => {
       const th = document.createElement('th');
       th.innerText = h;
       document.getElementById("headerRow").appendChild(th);
@@ -75,6 +55,3 @@ function downloadPDF() {
   window.open(`admitcards/${roll}.pdf`, "_blank");
 }
 </script>
-
-</body>
-</html>
