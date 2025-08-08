@@ -1,64 +1,64 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<title>RTCI Admit Card Generator</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
-<style>
-  body { font-family: Arial, sans-serif; background: #f4f4f4; text-align: center; padding: 30px; }
-  .container { background: white; padding: 20px; border-radius: 8px; display: inline-block; }
-  input { padding: 8px; font-size: 16px; margin-top: 10px; width: 200px; }
-  button { padding: 8px 16px; font-size: 16px; margin-left: 10px; }
-  .card { margin-top: 20px; border: 1px solid #ccc; padding: 15px; width: 300px; text-align: left; background: #fff; }
-</style>
+  <meta charset="UTF-8">
+  <title>RTCI Admit Card Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f7f7f7; text-align: center; padding: 30px; }
+    .container { background: white; padding: 20px; border-radius: 8px; display: inline-block; }
+    input { padding: 8px; font-size: 16px; width: 200px; }
+    button { padding: 8px 15px; font-size: 16px; margin-left: 5px; }
+    .card { margin-top: 20px; border: 1px solid #ccc; padding: 15px; width: 320px; text-align: left; background: #fff; }
+    .card h3 { margin-top: 0; text-align: center; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h2>RTCI CCC Admit Card</h2>
+    <input id="rollInput" type="text" placeholder="Enter Roll Number">
+    <button onclick="generatePDF()">Generate PDF</button>
 
-<div class="container">
-  <h2>Admit Card Generate</h2>
-  <input type="text" id="rollNo" placeholder="Roll No">
-  <button onclick="generateCard()">Generate PDF</button>
-
-  <div id="cardArea" style="display:none;">
-    <div class="card" id="admitCard">
-      <h3>RTCI CCC Test 2025</h3>
-      <p><strong>Roll No:</strong> <span id="cRoll"></span></p>
-      <p><strong>Name:</strong> <span id="cName"></span></p>
-      <p><strong>Father:</strong> <span id="cFather"></span></p>
-      <p><strong>Course:</strong> <span id="cCourse"></span></p>
-      <p><strong>Date:</strong> <span id="cDate"></span></p>
-      <p><strong>Time:</strong> <span id="cTime"></span></p>
+    <!-- This will be hidden initially -->
+    <div id="cardDiv" style="display: none;">
+      <div class="card" id="admitCard">
+        <h3>RTCI CCC Test 2025</h3>
+        <p><strong>Roll No:</strong> <span id="cRoll"></span></p>
+        <p><strong>Name:</strong> <span id="cName"></span></p>
+        <p><strong>Father Name:</strong> <span id="cFather"></span></p>
+        <p><strong>Course:</strong> <span id="cCourse"></span></p>
+        <p><strong>Exam Date:</strong> <span id="cDate"></span></p>
+        <p><strong>Exam Time:</strong> <span id="cTime"></span></p>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
-const sheetID = "1Gb5R718e-3YtPIjva6mqINQNUQCUzgp9ogA4xbja_zU";
-const sheetName = "Sheet1";
-const dataURL = `https://opensheet.elk.sh/${sheetID}/${sheetName}`;
+  const csvURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3Q.../pub?output=csv";
 
-async function generateCard() {
-  const roll = document.getElementById("rollNo").value.trim();
-  const cardDiv = document.getElementById("cardArea");
-  const result = await (await fetch(dataURL)).json();
-  const student = result.find(r => r["Roll No"] === roll);
+  async function generatePDF() {
+    const roll = document.getElementById("rollInput").value.trim();
+    if (!roll) { alert("कृपया Roll Number डालें"); return; }
 
-  if (!student) {
-    alert("Roll No not found!");
-    return;
+    const res = await fetch(csvURL);
+    const text = await res.text();
+    const rows = text.split("\n").map(r => r.split(","));
+
+    // Assuming header row has columns: Roll No,Name,Father Name,Course,Exam Date,Exam Time
+    let found = rows.slice(1).find(r => r[0] && r[0].trim() === roll);
+
+    if (!found) { alert("Roll Number not found!"); return; }
+
+    document.getElementById("cRoll").innerText = found[0];
+    document.getElementById("cName").innerText = found[1] || "";
+    document.getElementById("cFather").innerText = found[2] || "";
+    document.getElementById("cCourse").innerText = found[3] || "";
+    document.getElementById("cDate").innerText = found[4] || "";
+    document.getElementById("cTime").innerText = found[5] || "";
+
+    document.getElementById("cardDiv").style.display = "block";
+    html2pdf().set({ margin:0.5, filename:`${roll}_AdmitCard.pdf`, jsPDF:{orientation:'portrait',unit:'in',format:'letter'} }).from(document.getElementById("admitCard")).save();
   }
-
-  document.getElementById("cRoll").innerText = student["Roll No"];
-  document.getElementById("cName").innerText = student["Name"];
-  document.getElementById("cFather").innerText = student["Father Name"];
-  document.getElementById("cCourse").innerText = student["Course"];
-  document.getElementById("cDate").innerText = student["Exam Date"];
-  document.getElementById("cTime").innerText = student["Exam Time"];
-
-  cardDiv.style.display = "block";
-  html2pdf().set({ margin: 0.5, filename: `${roll}_AdmitCard.pdf` }).from(document.getElementById("admitCard")).save();
-}
 </script>
-
 </body>
 </html>
