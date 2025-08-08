@@ -1,64 +1,68 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>RTCI Admit Card Generator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; text-align: center; padding: 30px; }
-    .container { background: white; padding: 20px; border-radius: 8px; display: inline-block; }
-    input { padding: 8px; font-size: 16px; width: 200px; }
-    button { padding: 8px 15px; font-size: 16px; margin-left: 5px; }
-    .card { margin-top: 20px; border: 1px solid #ccc; padding: 15px; width: 320px; text-align: left; background: #fff; }
-    .card h3 { margin-top: 0; text-align: center; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTCI Latghat Admit Card</title>
+<style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    input { padding: 8px; font-size: 16px; margin: 10px; }
+    button { padding: 8px 15px; font-size: 16px; }
+    table { border-collapse: collapse; margin: 20px auto; }
+    th, td { border: 1px solid #333; padding: 8px 12px; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>RTCI CCC Admit Card</h2>
-    <input id="rollInput" type="text" placeholder="Enter Roll Number">
-    <button onclick="generatePDF()">Generate PDF</button>
 
-    <!-- This will be hidden initially -->
-    <div id="cardDiv" style="display: none;">
-      <div class="card" id="admitCard">
-        <h3>RTCI CCC Test 2025</h3>
-        <p><strong>Roll No:</strong> <span id="cRoll"></span></p>
-        <p><strong>Name:</strong> <span id="cName"></span></p>
-        <p><strong>Father Name:</strong> <span id="cFather"></span></p>
-        <p><strong>Course:</strong> <span id="cCourse"></span></p>
-        <p><strong>Exam Date:</strong> <span id="cDate"></span></p>
-        <p><strong>Exam Time:</strong> <span id="cTime"></span></p>
-      </div>
-    </div>
-  </div>
+<h1>RTCI Latghat Admit Card</h1>
+<input type="text" id="rollNo" placeholder="Enter Roll No">
+<button onclick="searchRollNo()">Search</button>
+
+<div id="result"></div>
 
 <script>
-  const csvURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3Q.../pub?output=csv";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv";
 
-  async function generatePDF() {
-    const roll = document.getElementById("rollInput").value.trim();
-    if (!roll) { alert("कृपया Roll Number डालें"); return; }
+    let sheetData = [];
 
-    const res = await fetch(csvURL);
-    const text = await res.text();
-    const rows = text.split("\n").map(r => r.split(","));
+    // Load CSV data
+    fetch(sheetUrl)
+        .then(res => res.text())
+        .then(data => {
+            const rows = data.split("\n").map(row => row.split(","));
+            sheetData = rows;
+        });
 
-    // Assuming header row has columns: Roll No,Name,Father Name,Course,Exam Date,Exam Time
-    let found = rows.slice(1).find(r => r[0] && r[0].trim() === roll);
+    function searchRollNo() {
+        const roll = document.getElementById("rollNo").value.trim();
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "";
 
-    if (!found) { alert("Roll Number not found!"); return; }
+        let found = false;
 
-    document.getElementById("cRoll").innerText = found[0];
-    document.getElementById("cName").innerText = found[1] || "";
-    document.getElementById("cFather").innerText = found[2] || "";
-    document.getElementById("cCourse").innerText = found[3] || "";
-    document.getElementById("cDate").innerText = found[4] || "";
-    document.getElementById("cTime").innerText = found[5] || "";
+        for (let i = 1; i < sheetData.length; i++) {
+            if (sheetData[i][0] && sheetData[i][0].trim() === roll) {
+                found = true;
+                resultDiv.innerHTML = `
+                    <h2>Admit Card</h2>
+                    <table>
+                        <tr><th>Roll No</th><td>${sheetData[i][0]}</td></tr>
+                        <tr><th>Name</th><td>${sheetData[i][1]}</td></tr>
+                        <tr><th>Father's Name</th><td>${sheetData[i][2]}</td></tr>
+                        <tr><th>Course</th><td>${sheetData[i][3]}</td></tr>
+                        <tr><th>Exam Date</th><td>${sheetData[i][4]}</td></tr>
+                        <tr><th>Exam Time</th><td>${sheetData[i][5]}</td></tr>
+                    </table>
+                `;
+                break;
+            }
+        }
 
-    document.getElementById("cardDiv").style.display = "block";
-    html2pdf().set({ margin:0.5, filename:`${roll}_AdmitCard.pdf`, jsPDF:{orientation:'portrait',unit:'in',format:'letter'} }).from(document.getElementById("admitCard")).save();
-  }
+        if (!found) {
+            resultDiv.innerHTML = "<p style='color:red;'>Roll No not found!</p>";
+        }
+    }
 </script>
+
 </body>
 </html>
