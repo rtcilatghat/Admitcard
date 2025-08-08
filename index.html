@@ -1,94 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Admit Card Download</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    input { padding: 8px; width: 200px; }
-    button { padding: 8px 12px; margin-left: 5px; cursor: pointer; }
-    table { margin: 20px auto; border-collapse: collapse; width: 80%; display: none; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background-color: #f2f2f2; }
-    #downloadBtn { display: none; margin-top: 15px; padding: 8px 16px; background-color: green; color: white; border: none; cursor: pointer; }
-  </style>
+  <title>Admit Card</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+  <h2>Admit Card Download</h2>
+  <input type="text" id="rollInput" placeholder="Roll No दर्ज करें">
+  <button onclick="getData()">Search</button>
 
-  <h2>Search Your Admit Card</h2>
-  <input type="text" id="rollNo" placeholder="Enter Roll Number">
-  <button onclick="searchData()">Search</button>
+  <div id="result"></div>
+  <button id="downloadBtn" style="display:none;" onclick="downloadPDF()">Download PDF</button>
 
-  <table id="resultTable">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Father Name</th>
-        <th>Course</th>
-        <th>Roll No</th>
-        <th>Exam Date</th>
-        <th>Exam Time</th>
-      </tr>
-    </thead>
-    <tbody id="resultBody"></tbody>
-  </table>
+  <script>
+    const sheetURL = https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv
+    let currentData = {};
 
-  <button id="downloadBtn" onclick="downloadPDF()">Download Admit Card</button>
-
-<script>
-  const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv";
-  let selectedData = null;
-
-  function searchData() {
-    const roll = document.getElementById("rollNo").value.trim();
-    if (!roll) {
-      alert("Please enter roll number");
-      return;
+    async function getData() {
+      const rollNo = document.getElementById("rollInput").value.trim();
+      const response = await fetch(sheetURL);
+      const data = await response.text();
+      const rows = data.split("\n").map(row => row.split(","));
+      
+      const header = rows[0];
+      const rollIndex = header.findIndex(h => h.trim().toLowerCase() === "roll no".toLowerCase());
+      
+      let found = false;
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][rollIndex] && rows[i][rollIndex].trim() === rollNo) {
+          found = true;
+          currentData = {};
+          header.forEach((h, idx) => currentData[h.trim()] = rows[i][idx]?.trim() || "");
+          document.getElementById("result").innerHTML =
+            `<p><b>Name:</b> ${currentData["Name"]}</p>
+             <p><b>Father Name:</b> ${currentData["Father Name"]}</p>
+             <p><b>Course:</b> ${currentData["Course"]}</p>
+             <p><b>Roll No:</b> ${currentData["Roll No"]}</p>
+             <p><b>Exam Date:</b> ${currentData["Exam Date"]}</p>
+             <p><b>Exam Time:</b> ${currentData["Exam Time"]}</p>`;
+          document.getElementById("downloadBtn").style.display = "block";
+          break;
+        }
+      }
+      if (!found) {
+        document.getElementById("result").innerHTML = "<p style='color:red;'>Roll No Not Found</p>";
+        document.getElementById("downloadBtn").style.display = "none";
+      }
     }
 
-    fetch(sheetUrl)
-      .then(res => res.text())
-      .then(csv => {
-        const rows = csv.split("\n").map(row => row.split(","));
-        const header = rows[0];
-        const dataRows = rows.slice(1);
-
-        let found = false;
-        for (let row of dataRows) {
-          if (row[3] && row[3].trim() === roll) { 
-            document.getElementById("resultBody").innerHTML = `
-              <tr>
-                <td>${row[0]}</td>
-                <td>${row[1]}</td>
-                <td>${row[2]}</td>
-                <td>${row[3]}</td>
-                <td>${row[4]}</td>
-                <td>${row[5]}</td>
-              </tr>
-            `;
-            document.getElementById("resultTable").style.display = "table";
-            document.getElementById("downloadBtn").style.display = "inline-block";
-            selectedData = row;
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          alert("Result not found");
-          document.getElementById("resultTable").style.display = "none";
-          document.getElementById("downloadBtn").style.display = "none";
-        }
-      });
-  }
-
-  function downloadPDF() {
-    if (!selectedData) return;
-    const roll = selectedData[3];
-    // यहां अपने PDF फाइल का नाम सेट करें (उदाहरण: roll no के नाम से)
-    const pdfUrl = `admitcards/${roll}.pdf`; 
-    window.open(pdfUrl, "_blank");
-  }
-</script>
-
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text("Admit Card", 80, 20);
+      doc.setFontSize(12);
+      let y = 40;
+      for (const key in currentData) {
+        doc.text(`${key}: ${currentData[key]}`, 20, y);
+        y += 10;
+      }
+      doc.save(`${currentData["Roll No"]}_AdmitCard.pdf`);
+    }
+  </script>
 </body>
 </html>
