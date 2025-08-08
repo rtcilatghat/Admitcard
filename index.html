@@ -1,34 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admit Card Download</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+    input { padding: 8px; width: 200px; }
+    button { padding: 8px 12px; margin-left: 5px; cursor: pointer; }
+    table { margin: 20px auto; border-collapse: collapse; width: 80%; display: none; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
+    #downloadBtn { display: none; margin-top: 15px; padding: 8px 16px; background-color: green; color: white; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h2>Search Your Admit Card</h2>
+  <input type="text" id="rollNo" placeholder="Enter Roll Number">
+  <button onclick="searchData()">Search</button>
+
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Father Name</th>
+        <th>Course</th>
+        <th>Roll No</th>
+        <th>Exam Date</th>
+        <th>Exam Time</th>
+      </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+  </table>
+
+  <button id="downloadBtn" onclick="downloadPDF()">Download Admit Card</button>
+
 <script>
-const csvURL = 'YOUR_PUBLISHED_CSV_LINK_HERE'; // आपको replace करना है
+  const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv";
+  let selectedData = null;
 
-let sheetData = [];
+  function searchData() {
+    const roll = document.getElementById("rollNo").value.trim();
+    if (!roll) {
+      alert("Please enter roll number");
+      return;
+    }
 
-fetch(csvURL)
-  .then(res => res.text())
-  .then(text => {
-    sheetData = text.trim().split('\n').map(r => r.split(','));
-    console.log("Sheet data loaded", sheetData.length, "rows");
-  })
-  .catch(err => console.error("CSV load Error:", err));
+    fetch(sheetUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.split("\n").map(row => row.split(","));
+        const header = rows[0];
+        const dataRows = rows.slice(1);
 
-function searchData() {
-  const roll = document.getElementById("rollNo").value.trim().toLowerCase();
-  if (!roll) { alert("Please enter Roll No"); return; }
-
-  if (!sheetData.length) { alert("Sheet data not loaded yet"); return; }
-
-  const headers = sheetData[0].map(h => h.trim().toLowerCase());
-  const rollIdx = headers.indexOf("roll no");
-
-  if (rollIdx === -1) { alert("Roll No column not found in sheet header"); return; }
-
-  const row = sheetData.slice(1).find(r => r[rollIdx]?.trim().toLowerCase() === roll);
-
-  if (row) {
-    console.log("Row found:", row);
-    // अब तालिका दिखाएँ या PDF download button दिखाएँ
-  } else {
-    alert("Roll No not found!");
+        let found = false;
+        for (let row of dataRows) {
+          if (row[3] && row[3].trim() === roll) { 
+            document.getElementById("resultBody").innerHTML = `
+              <tr>
+                <td>${row[0]}</td>
+                <td>${row[1]}</td>
+                <td>${row[2]}</td>
+                <td>${row[3]}</td>
+                <td>${row[4]}</td>
+                <td>${row[5]}</td>
+              </tr>
+            `;
+            document.getElementById("resultTable").style.display = "table";
+            document.getElementById("downloadBtn").style.display = "inline-block";
+            selectedData = row;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          alert("Result not found");
+          document.getElementById("resultTable").style.display = "none";
+          document.getElementById("downloadBtn").style.display = "none";
+        }
+      });
   }
-}
+
+  function downloadPDF() {
+    if (!selectedData) return;
+    const roll = selectedData[3];
+    // यहां अपने PDF फाइल का नाम सेट करें (उदाहरण: roll no के नाम से)
+    const pdfUrl = `admitcards/${roll}.pdf`; 
+    window.open(pdfUrl, "_blank");
+  }
 </script>
+
+</body>
+</html>
