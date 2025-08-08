@@ -1,57 +1,34 @@
 <script>
-const csvURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-FnP7dIxjn3QNbsLolSKfXQYXlYfPWzMQShFjq71C9pOjO9Jfzi2s4UHgwJ842caxfDk6fsInkMhb/pub?output=csv';
+const csvURL = 'YOUR_PUBLISHED_CSV_LINK_HERE'; // आपको replace करना है
+
 let sheetData = [];
 
-// CSV लोड
 fetch(csvURL)
   .then(res => res.text())
   .then(text => {
     sheetData = text.trim().split('\n').map(r => r.split(','));
-    console.log("Sheet data loaded:", sheetData);
-  });
+    console.log("Sheet data loaded", sheetData.length, "rows");
+  })
+  .catch(err => console.error("CSV load Error:", err));
 
 function searchData() {
   const roll = document.getElementById("rollNo").value.trim().toLowerCase();
-  if (!roll) {
-    alert("Please enter Roll No");
-    return;
-  }
+  if (!roll) { alert("Please enter Roll No"); return; }
+
+  if (!sheetData.length) { alert("Sheet data not loaded yet"); return; }
 
   const headers = sheetData[0].map(h => h.trim().toLowerCase());
-  const rollIndex = headers.findIndex(h => h.includes("roll"));
-  if (rollIndex === -1) {
-    alert("Roll No column not found in sheet!");
-    return;
-  }
+  const rollIdx = headers.indexOf("roll no");
 
-  const row = sheetData.slice(1).find(r => r[rollIndex]?.trim().toLowerCase() === roll);
+  if (rollIdx === -1) { alert("Roll No column not found in sheet header"); return; }
 
-  const table = document.getElementById("resultTable");
-  document.getElementById("headerRow").innerHTML = '';
-  document.getElementById("dataRow").innerHTML = '';
-  document.getElementById("downloadBtn").style.display = 'none';
+  const row = sheetData.slice(1).find(r => r[rollIdx]?.trim().toLowerCase() === roll);
 
   if (row) {
-    sheetData[0].forEach(h => {
-      const th = document.createElement('th');
-      th.innerText = h;
-      document.getElementById("headerRow").appendChild(th);
-    });
-    row.forEach(d => {
-      const td = document.createElement('td');
-      td.innerText = d;
-      document.getElementById("dataRow").appendChild(td);
-    });
-    table.style.display = 'table';
-    document.getElementById("downloadBtn").style.display = 'inline-block';
+    console.log("Row found:", row);
+    // अब तालिका दिखाएँ या PDF download button दिखाएँ
   } else {
     alert("Roll No not found!");
-    table.style.display = 'none';
   }
-}
-
-function downloadPDF() {
-  const roll = document.getElementById("rollNo").value.trim();
-  window.open(`admitcards/${roll}.pdf`, "_blank");
 }
 </script>
